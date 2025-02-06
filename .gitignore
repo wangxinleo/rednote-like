@@ -1,0 +1,69 @@
+# 依赖目录
+node_modules
+dist
+dist-ssr
+
+# 本地环境文件
+.env
+.env.local
+.env.*.local
+
+# 日志文件
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# 编辑器目录和文件
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+
+# 测试覆盖率目录
+coverage
+
+# 临时文件
+*.local
+.temp
+.cache
+
+# 类型声明文件
+*.d.ts
+!src/types/*.d.ts
+
+# 构建时的临时文件
+.eslintcache
+.stylelintcache
+
+# Vite 构建时的临时文件
+vite.config.*.timestamp-*
+
+# 自动生成的文件
+auto-imports.d.ts
+components.d.ts
+
+# 其他
+.history
+*.bak
+*.tmp
+*~
+
+# 锁定文件
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.pnpm-store/
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
