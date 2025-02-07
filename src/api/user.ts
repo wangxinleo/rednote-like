@@ -1,6 +1,6 @@
 import request from "@/utils/request";
 
-export const postData = (data: any) => {
+export const userLogin = (data: any) => {
   return request<any>({
     url: "/user/login", // mock接口
     method: "post",
@@ -8,7 +8,7 @@ export const postData = (data: any) => {
   });
 };
 
-export const getData = (queryParams:any) => {
+export const userInfo = (queryParams:any) => {
   return request<any>({
     url: "/user/info", // mock接口
     method: "get",

@@ -7,10 +7,10 @@
     <div class="note-container">
       <div class="media-container">
         <el-carousel height="90vh">
-          <el-carousel-item v-for="item in 4" :key="item">
+          <el-carousel-item>
             <el-image
               style="width: 100%; height: 100%"
-              src="https://fuss10.elemecdn.com/a/3f/3302e58f9a181d2509f3dc0fa68b0jpeg.jpeg"
+              :src="feedData?.imageUrl"
               fit="cover"
             />
           </el-carousel-item>
@@ -24,58 +24,73 @@
               <img
                 class="avatar-item"
                 style="width: 40px; height: 40px"
-                src="https://fuss10.elemecdn.com/a/3f/3302e58f9a181d2509f3dc0fa68b0jpeg.jpeg"
+                :src="feedData?.author?.avatar"
               />
-              <span class="name">这是名字</span>
+              <span class="name">{{ feedData?.author?.name }}</span>
             </div>
             <div class="follow-btn">
-              <el-button type="danger" size="large" round>关注</el-button>
+              <el-button 
+                :type="feedData?.isFollowed ? 'default' : 'primary'" 
+                size="large" 
+                round
+                @click="toggleFollow"
+              >
+                {{ feedData?.isFollowed ? '取消关注' : '关注' }}
+              </el-button>
             </div>
           </div>
 
           <div class="note-scroller">
             <div class="note-content">
-              <div class="title">这是什么动漫</div>
+              <div class="title">{{ feedData?.title }}</div>
               <div class="desc">
-                <span>这是什么描述信息 <br /></span>
-                <a class="tag tag-search">#海贼王</a>
-                <a class="tag tag-search">#海贼王</a>
-                <a class="tag tag-search">#海贼王</a>
+                <span>{{ feedData?.description }} <br /></span>
+                <template v-if="feedData?.tags">
+                  <a v-for="tag in feedData.tags" :key="tag" class="tag tag-search">#{{ tag }}</a>
+                </template>
               </div>
               <div class="bottom-container">
-                <span class="date">2023-10-21</span>
+                <span class="date">{{ formatTime(feedData?.createTime) }}</span>
               </div>
             </div>
             <div class="divider interaction-divider"></div>
 
             <!-- 评论 -->
-
             <div class="comments-el">
               <div class="comments-container">
-                <div class="total">共63条评论</div>
+                <div class="total">共{{ feedData?.comments?.length || 0 }}条评论</div>
                 <div class="list-container">
-                  <div class="parent-comment">
+                  <div v-for="comment in feedData?.comments" :key="comment.id" class="parent-comment">
                     <div class="comment-item">
                       <div class="comment-inner-container">
                         <div class="avatar">
                           <img
                             class="avatar-item"
-                            src="https://fuss10.elemecdn.com/a/3f/3302e58f9a181d2509f3dc0fa68b0jpeg.jpeg"
+                            :src="comment.author.avatar"
                           />
                         </div>
                         <div class="right">
                           <div class="author-wrapper">
-                            <div class="author"><a class="name">用户已注销</a></div>
+                            <div class="author"><a class="name">{{ comment.author.name }}</a></div>
                           </div>
-                          <div class="content">内容</div>
+                          <div class="content">{{ comment.content }}</div>
 
                           <div class="info">
-                            <div class="date"><span>昨天 16:49</span></div>
+                            <div class="date"><span>{{ formatTime(comment.createTime) }}</span></div>
                             <div class="interactions">
                               <div class="like">
-                                <span class="like-wrapper">
-                                  <Star style="width: 1em; height: 1em" />
-                                  <span class="count">247</span>
+                                <span class="like-wrapper" @click="toggleCommentLike(comment)">
+                                  <Star 
+                                    style="width: 1em; height: 1em" 
+                                    :class="{ 'liked': comment.isLiked }"
+                                  />
+                                  <span class="count" :class="{ 'liked': comment.isLiked }">{{ comment.likes }}</span>
+                                </span>
+                              </div>
+                              <div class="reply">
+                                <span class="reply-btn" @click="showReplyInput(comment)">
+                                  <ChatRound style="width: 1em; height: 1em" />
+                                  <span>回复</span>
                                 </span>
                               </div>
                             </div>
@@ -85,83 +100,30 @@
                     </div>
                     <div class="reply-container">
                       <div class="list-container">
-                        <div class="comment-item">
+                        <div v-for="reply in comment.replies" :key="reply.id" class="comment-item">
                           <div class="comment-inner-container">
                             <div class="avatar">
                               <img
                                 class="avatar-item"
-                                src="https://fuss10.elemecdn.com/1/34/19aa98b1fcb2781c4fba33d850549jpeg.jpeg"
+                                :src="reply.author.avatar"
                               />
                             </div>
                             <div class="right">
                               <div class="author-wrapper">
-                                <div class="author"><a class="name">用户已注销</a></div>
+                                <div class="author"><a class="name">{{ reply.author.name }}</a></div>
                               </div>
-                              <div class="content">内容</div>
+                              <div class="content">{{ reply.content }}</div>
 
                               <div class="info">
-                                <div class="date"><span>昨天 16:49</span></div>
+                                <div class="date"><span>{{ formatTime(reply.createTime) }}</span></div>
                                 <div class="interactions">
                                   <div class="like">
-                                    <span class="like-wrapper">
-                                      <Star style="width: 1em; height: 1em" />
-                                      <span class="count">247</span>
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div class="comment-item">
-                          <div class="comment-inner-container">
-                            <div class="avatar">
-                              <img
-                                class="avatar-item"
-                                src="https://fuss10.elemecdn.com/1/34/19aa98b1fcb2781c4fba33d850549jpeg.jpeg"
-                              />
-                            </div>
-                            <div class="right">
-                              <div class="author-wrapper">
-                                <div class="author"><a class="name">用户已注销</a></div>
-                              </div>
-                              <div class="content">内容</div>
-
-                              <div class="info">
-                                <div class="date"><span>昨天 16:49</span></div>
-                                <div class="interactions">
-                                  <div class="like">
-                                    <span class="like-wrapper">
-                                      <Star style="width: 1em; height: 1em" />
-                                      <span class="count">247</span>
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div class="comment-item">
-                          <div class="comment-inner-container">
-                            <div class="avatar">
-                              <img
-                                class="avatar-item"
-                                src="https://fuss10.elemecdn.com/0/6f/e35ff375812e6b0020b6b4e8f9583jpeg.jpeg"
-                              />
-                            </div>
-                            <div class="right">
-                              <div class="author-wrapper">
-                                <div class="author"><a class="name">用户已注销</a></div>
-                              </div>
-                              <div class="content">内容</div>
-
-                              <div class="info">
-                                <div class="date"><span>昨天 16:49</span></div>
-                                <div class="interactions">
-                                  <div class="like">
-                                    <span class="like-wrapper">
-                                      <Star style="width: 1em; height: 1em" />
-                                      <span class="count">247</span>
+                                    <span class="like-wrapper" @click="toggleReplyLike(reply)">
+                                      <Star 
+                                        style="width: 1em; height: 1em"
+                                        :class="{ 'liked': reply.isLiked }"
+                                      />
+                                      <span class="count" :class="{ 'liked': reply.isLiked }">{{ reply.likes }}</span>
                                     </span>
                                   </div>
                                 </div>
@@ -171,123 +133,7 @@
                         </div>
                       </div>
 
-                      <div class="show-more">展开更多的回复</div>
-                    </div>
-                  </div>
-                  <div class="parent-comment">
-                    <div class="comment-item">
-                      <div class="comment-inner-container">
-                        <div class="avatar">
-                          <img
-                            class="avatar-item"
-                            src="https://fuss10.elemecdn.com/a/3f/3302e58f9a181d2509f3dc0fa68b0jpeg.jpeg"
-                          />
-                        </div>
-                        <div class="right">
-                          <div class="author-wrapper">
-                            <div class="author"><a class="name">用户已注销</a></div>
-                          </div>
-                          <div class="content">内容</div>
-
-                          <div class="info">
-                            <div class="date"><span>昨天 16:49</span></div>
-                            <div class="interactions">
-                              <div class="like">
-                                <span class="like-wrapper">
-                                  <span class="count">247</span>
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="reply-container">
-                      <div class="list-container">
-                        <div class="comment-item">
-                          <div class="comment-inner-container">
-                            <div class="avatar">
-                              <img
-                                class="avatar-item"
-                                src="https://fuss10.elemecdn.com/1/34/19aa98b1fcb2781c4fba33d850549jpeg.jpeg"
-                              />
-                            </div>
-                            <div class="right">
-                              <div class="author-wrapper">
-                                <div class="author"><a class="name">用户已注销</a></div>
-                              </div>
-                              <div class="content">内容</div>
-
-                              <div class="info">
-                                <div class="date"><span>昨天 16:49</span></div>
-                                <div class="interactions">
-                                  <div class="like">
-                                    <span class="like-wrapper">
-                                      <span class="count">247</span>
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div class="comment-item">
-                          <div class="comment-inner-container">
-                            <div class="avatar">
-                              <img
-                                class="avatar-item"
-                                src="https://fuss10.elemecdn.com/1/34/19aa98b1fcb2781c4fba33d850549jpeg.jpeg"
-                              />
-                            </div>
-                            <div class="right">
-                              <div class="author-wrapper">
-                                <div class="author"><a class="name">用户已注销</a></div>
-                              </div>
-                              <div class="content">内容</div>
-
-                              <div class="info">
-                                <div class="date"><span>昨天 16:49</span></div>
-                                <div class="interactions">
-                                  <div class="like">
-                                    <span class="like-wrapper">
-                                      <span class="count">247</span>
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div class="comment-item">
-                          <div class="comment-inner-container">
-                            <div class="avatar">
-                              <img
-                                class="avatar-item"
-                                src="https://fuss10.elemecdn.com/0/6f/e35ff375812e6b0020b6b4e8f9583jpeg.jpeg"
-                              />
-                            </div>
-                            <div class="right">
-                              <div class="author-wrapper">
-                                <div class="author"><a class="name">用户已注销</a></div>
-                              </div>
-                              <div class="content">内容</div>
-
-                              <div class="info">
-                                <div class="date"><span>昨天 16:49</span></div>
-                                <div class="interactions">
-                                  <div class="like">
-                                    <span class="like-wrapper">
-                                      <span class="count">247</span>
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div class="show-more">展开更多的回复</div>
+                      <div class="show-more" @click="loadMoreReplies(comment)">展开更多的回复</div>
                     </div>
                   </div>
                 </div>
@@ -298,38 +144,56 @@
           </div>
 
           <div class="interactions-footer">
+            <div v-if="currentReplyTo" class="reply-reference">
+              <div class="reference-content">
+                <span class="reference-label">回复：</span>
+                <span class="reference-text">{{ currentReplyTo.content.slice(0, 10) + '...' }}</span>
+              </div>
+              <div class="reference-close" @click="closeReplyInput">
+                <Close style="width: 1em; height: 1em" />
+              </div>
+            </div>
             <div class="buttons">
               <div class="left">
-                <span class="like-wrapper"
-                  ><span class="like-lottie"> <Star style="width: 0.8em; height: 0.8em; color: #333" /> </span
-                  ><span class="count">46</span></span
+                <span 
+                  class="like-wrapper"
+                  :class="{ 'like-active': feedData?.isLiked }"
+                  @click="handleLike"
                 >
+                  <span class="like-lottie">
+                    <Star 
+                      style="width: 0.8em; height: 0.8em" 
+                      :class="{ 'liked': feedData?.isLiked }"
+                    />
+                  </span>
+                  <span class="count" :class="{ 'liked': feedData?.isLiked }">{{ feedData?.likes }}</span>
+                </span>
                 <span class="collect-wrapper">
                   <span class="like-lottie"> <PictureRounded style="width: 0.8em; height: 0.8em; color: #333" /> </span
-                  ><span class="count">21</span></span
+                  ><span class="count">{{ feedData?.collects || 0 }}</span></span
                 >
                 <span class="chat-wrapper">
                   <span class="like-lottie"> <ChatRound style="width: 0.8em; height: 0.8em; color: #333" /> </span
-                  ><span class="count">22</span></span
+                  ><span class="count">{{ feedData?.comments?.length || 0 }}</span></span
                 >
               </div>
               <div class="share-wrapper"></div>
             </div>
             <div class="comment-wrapper active comment-comp">
               <div class="input-wrapper">
-                <input class="comment-input" type="text" placeholder="回复内容" />
+                <input class="comment-input" type="text" placeholder="回复内容" v-model="replyContent" />
                 <div class="input-buttons">
                   <Close style="width: 1.2em; height: 1.2em" />
                 </div>
               </div>
-              <button class="submit">发送</button>
+              <button class="submit" @click="submitReply">发送</button>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="close-cricle">
+    <div class="close-cricle" @click="handleClose">
       <div class="close close-mask-white">
         <Close style="width: 1.2em; height: 1.2em; color: rgba(51, 51, 51, 0.8)" />
       </div>
@@ -339,6 +203,204 @@
 
 <script lang="ts" setup>
 import { Close, Star, PictureRounded, ChatRound } from "@element-plus/icons-vue";
+import { ref, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import type { FeedItem } from '@/api/feeds';
+import { getFeedById, getMoreReplies, toggleFeedLike, toggleCommentLike as apiToggleCommentLike, toggleReplyLike as apiToggleReplyLike } from '@/api/feeds';
+import { useUserStore } from '@/store/userStore';
+import { ElMessage } from 'element-plus';
+
+const route = useRoute();
+const router = useRouter();
+const userStore = useUserStore();
+const feedData = ref<FeedItem>();
+const replyContent = ref('');
+const showReplyBox = ref(false);
+const currentReplyTo = ref<any>(null);
+
+const handleClose = () => {
+  router.back();
+};
+
+const handleLike = async () => {
+  if (!feedData.value) return;
+  
+  const currentUser = userStore.getUserInfo();
+  if (!currentUser) {
+    ElMessage.error('请先登录');
+    return;
+  }
+
+  try {
+    await toggleFeedLike(feedData.value.id);
+    feedData.value.isLiked = !feedData.value.isLiked;
+    feedData.value.likes += feedData.value.isLiked ? 1 : -1;
+  } catch (error) {
+    console.error('Failed to toggle like:', error);
+    ElMessage.error('操作失败，请重试');
+  }
+};
+
+const toggleFollow = () => {
+  if (feedData.value) {
+    feedData.value.isFollowed = !feedData.value.isFollowed;
+  }
+};
+
+const toggleCommentLike = async (comment: any) => {
+  const currentUser = userStore.getUserInfo();
+  if (!currentUser) {
+    ElMessage.error('请先登录');
+    return;
+  }
+
+  try {
+    await apiToggleCommentLike(comment.id);
+    comment.isLiked = !comment.isLiked;
+    comment.likes += comment.isLiked ? 1 : -1;
+  } catch (error) {
+    console.error('Failed to toggle comment like:', error);
+    ElMessage.error('操作失败，请重试');
+  }
+};
+
+const toggleReplyLike = async (reply: any) => {
+  const currentUser = userStore.getUserInfo();
+  if (!currentUser) {
+    ElMessage.error('请先登录');
+    return;
+  }
+
+  try {
+    await apiToggleReplyLike(reply.id);
+    reply.isLiked = !reply.isLiked;
+    reply.likes += reply.isLiked ? 1 : -1;
+  } catch (error) {
+    console.error('Failed to toggle reply like:', error);
+    ElMessage.error('操作失败，请重试');
+  }
+};
+
+const loadMoreReplies = async (comment: any) => {
+  try {
+    const res = await getMoreReplies(comment.id, 1, 5); // 假设每次加载5条
+    comment.replies.push(...res.data);
+  } catch (error) {
+    console.error('Failed to load more replies:', error);
+  }
+};
+
+const showReplyInput = (comment: any) => {
+  showReplyBox.value = true;
+  currentReplyTo.value = comment;
+  replyContent.value = ''; // 清空输入框
+};
+
+const closeReplyInput = () => {
+  showReplyBox.value = false;
+  currentReplyTo.value = null;
+  replyContent.value = '';
+};
+
+const submitReply = () => {
+  if (!replyContent.value.trim()) return;
+  
+  const currentUser = userStore.getUserInfo();
+  if (!currentUser) {
+    ElMessage.error('请先登录');
+    return;
+  }
+  
+  const newReply = {
+    id: Date.now(),
+    author: {
+      id: currentUser.userId,
+      name: currentUser.nickname,
+      avatar: currentUser.avatar
+    },
+    content: replyContent.value,
+    likes: 0,
+    createTime: new Date().toISOString(),
+  };
+
+  if (currentReplyTo.value) {
+    // 回复某条评论
+    if (!currentReplyTo.value.replies) {
+      currentReplyTo.value.replies = [];
+    }
+    currentReplyTo.value.replies.push(newReply);
+  } else {
+    // 直接回复帖子
+    if (!feedData.value) return;
+    if (!feedData.value.comments) {
+      feedData.value.comments = [];
+    }
+    feedData.value.comments.push({
+      ...newReply,
+      replies: []
+    });
+  }
+
+  closeReplyInput();
+};
+
+const formatTime = (time?: string) => {
+  if (!time) return '';
+  const date = new Date(time);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  
+  // 转换为秒
+  const diffSeconds = Math.floor(diff / 1000);
+  
+  if (diffSeconds < 60) {
+    return '刚刚';
+  }
+  
+  // 转换为分钟
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  if (diffMinutes < 60) {
+    return `${diffMinutes}分钟前`;
+  }
+  
+  // 转换为小时
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) {
+    return `${diffHours}小时前`;
+  }
+  
+  // 转换为天
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 30) {
+    return `${diffDays}天前`;
+  }
+  
+  // 转换为月
+  const diffMonths = Math.floor(diffDays / 30);
+  if (diffMonths < 12) {
+    return `${diffMonths}个月前`;
+  }
+  
+  // 转换为年
+  const diffYears = Math.floor(diffMonths / 12);
+  return `${diffYears}年前`;
+};
+
+const fetchFeedData = async () => {
+  const id = route.query.id;
+  if (!id) return;
+  
+  try {
+    const res = await getFeedById(Number(id));
+    feedData.value = res.data;
+  } catch (error) {
+    console.error('Failed to fetch feed data:', error);
+  }
+};
+
+onMounted(() => {
+  fetchFeedData();
+});
 </script>
 
 <style lang="less" scoped>
@@ -471,6 +533,7 @@ import { Close, Star, PictureRounded, ChatRound } from "@element-plus/icons-vue"
         overflow-y: scroll;
         flex-grow: 1;
         height: 80vh;
+        padding-bottom: 180px;
 
         .note-content {
           padding: 0 24px 24px;
@@ -617,11 +680,10 @@ import { Close, Star, PictureRounded, ChatRound } from "@element-plus/icons-vue"
                           display: flex;
                           margin-left: -2px;
 
-                          .like-wrapper {
+                          .like-wrapper, .reply-btn {
                             padding: 0 4px;
                             color: rgba(51, 51, 51, 0.8);
                             font-weight: 500;
-
                             position: relative;
                             cursor: pointer;
                             display: flex;
@@ -637,6 +699,10 @@ import { Close, Star, PictureRounded, ChatRound } from "@element-plus/icons-vue"
                               margin-left: 2px;
                               font-weight: 500;
                             }
+                          }
+
+                          .reply {
+                            margin-left: 8px;
                           }
                         }
                       }
@@ -669,10 +735,48 @@ import { Close, Star, PictureRounded, ChatRound } from "@element-plus/icons-vue"
         background: #fff;
         flex-shrink: 0;
         padding: 12px 24px 24px;
-        height: 130px;
+        height: auto;
+        min-height: 130px;
         border-top: 1px solid rgba(0, 0, 0, 0.08);
-        flex-basis: 130px;
         z-index: 1;
+
+        .reply-reference {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 8px 12px;
+          background: rgba(0, 0, 0, 0.03);
+          border-radius: 8px;
+          margin-bottom: 12px;
+
+          .reference-content {
+            flex: 1;
+            overflow: hidden;
+            
+            .reference-label {
+              color: rgba(51, 51, 51, 0.6);
+              margin-right: 4px;
+            }
+            
+            .reference-text {
+              color: #333;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+          }
+
+          .reference-close {
+            cursor: pointer;
+            padding: 4px;
+            margin-left: 8px;
+            color: rgba(51, 51, 51, 0.6);
+            
+            &:hover {
+              color: #333;
+            }
+          }
+        }
 
         .buttons {
           display: flex;
@@ -803,6 +907,46 @@ import { Close, Star, PictureRounded, ChatRound } from "@element-plus/icons-vue"
         }
       }
     }
+  }
+}
+
+.interactions {
+  display: flex;
+  margin-left: -2px;
+
+  .like-wrapper, .reply-btn {
+    padding: 0 4px;
+    color: rgba(51, 51, 51, 0.8);
+    font-weight: 500;
+    position: relative;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+
+    .like-lottie {
+      width: 16px;
+      height: 16px;
+      left: 4px;
+    }
+
+    .count {
+      margin-left: 2px;
+      font-weight: 500;
+    }
+  }
+
+  .reply {
+    margin-left: 8px;
+  }
+}
+
+.liked {
+  color: #409EFF !important;
+}
+
+.like-wrapper {
+  &.like-active {
+    color: #409EFF;
   }
 }
 </style>

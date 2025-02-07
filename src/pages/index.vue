@@ -2,7 +2,7 @@
   <div class="container">
     <div class="top">
       <header class="mask-paper">
-        <a style="display: flex">医路相伴</a>
+        <a class="logo">医路相伴</a>
         <div class="tool-box"></div>
         <div class="input-box">
           <input type="text" class="search-input" placeholder="搜索医路相伴" />
@@ -17,54 +17,57 @@
     <div class="main">
       <div class="side-bar">
         <ul class="channel-list">
-          <li class="active-channel">
+          <li :class="{ 'active-channel': activeMenu === 'dashboard' }" @click="toDashboard()">
             <a class="link-wrapper"
-              ><House style="width: 1em; height: 1em; margin-right: 8px" /><span class="channel" @click="toDashboard()"
+              ><House style="width: 1em; height: 1em; margin-right: 8px" /><span class="channel"
                 >发现</span
               ></a
             >
           </li>
-          <li>
-            <Star style="width: 1em; height: 1em; margin-right: 8px" /><span class="channel" @click="toTrend()">
+          <li v-if="token" :class="{ 'active-channel': activeMenu === 'trend' }" @click="toTrend()">
+            <Star style="width: 1em; height: 1em; margin-right: 8px" /><span class="channel">
               动态</span
             >
           </li>
-          <li>
-            <Bell style="width: 1em; height: 1em; margin-right: 8px" /><span class="channel" @click="toMessage()">
+          <li v-if="token" :class="{ 'active-channel': activeMenu === 'message' }" @click="toMessage()">
+            <Bell style="width: 1em; height: 1em; margin-right: 8px" /><span class="channel">
               消息</span
             >
           </li>
-          <li>
-            <CirclePlus style="width: 1em; height: 1em; margin-right: 8px" /><span class="channel" @click="toPush()">
+          <li v-if="token" :class="{ 'active-channel': activeMenu === 'push' }" @click="toPush()">
+            <CirclePlus style="width: 1em; height: 1em; margin-right: 8px" /><span class="channel">
               发布</span
             >
           </li>
-          <li>
-            <User style="width: 1em; height: 1em; margin-right: 8px" /><span class="channel" @click="toUser()">
+          <li v-if="token" :class="{ 'active-channel': activeMenu === 'user' }" @click="toUser()">
+            <User style="width: 1em; height: 1em; margin-right: 8px" /><span class="channel">
               个人</span
             >
           </li>
+          <div v-if="!token" @click="handleLoginOrLogout()" class="login-wrapper login-btn">
+            <span>点击登录</span>
+          </div>
         </ul>
 
         <div class="information-container">
-          <div class="information-pad">
+          <div class="information-pad" :class="{ 'show': showInfoPad }">
             <div class="container">
               <div>
                 <div>
                   <div class="group-wrapper">
-                    <div class="menu-item hover-effect">
+                    <div class="menu-item hover-effect" @click="toAbout()">
                       <span>关于医路相伴</span>
                       <div class="icon">
                         <ArrowRight style="width: 1em; height: 1em; margin-right: 8px" />
                       </div>
                     </div>
-                    <div class="menu-item hover-effect">
+                    <div class="menu-item hover-effect" @click="toPrivacy()">
                       <span>隐私，协议</span>
                       <div class="icon">
                         <ArrowRight style="width: 1em; height: 1em; margin-right: 8px" />
                       </div>
                     </div>
-                    <div class="menu-item hover-effect">
+                    <div class="menu-item hover-effect" @click="toHelp()">
                       <span>帮助与客服</span>
                     </div>
                   </div>
@@ -73,20 +76,11 @@
                 <div>
                   <div class="group-wrapper">
                     <div class="group-header">访问方式</div>
-                    <div class="menu-item hover-effect">
-                      <span>键盘快捷键</span>
-                      <div class="icon">
-                        <Search style="width: 1em; height: 1em; margin-right: 8px" />
-                      </div>
-                    </div>
-                    <div class="menu-item hover-effect">
+                    <div class="menu-item hover-effect" @click="toDesktop()">
                       <span>添加医路相伴到桌面</span>
                       <div class="icon">
                         <ArrowRight style="width: 1em; height: 1em; margin-right: 8px" />
                       </div>
-                    </div>
-                    <div class="menu-item hover-effect">
-                      <span>小窗模式</span>
                     </div>
                   </div>
                   <div class="divider"></div>
@@ -94,19 +88,8 @@
                 <div>
                   <div class="group-wrapper">
                     <div class="group-header">设置</div>
-                    <div class="menu-item hover-effect">
-                      <span>深色模式</span>
-                      <div class="multistage-toggle component">
-                        <button class="toggle-item active">
-                          <div class="icon-wrapper"><Sunny style="width: 1em; height: 1em" /></div>
-                        </button>
-                        <button class="toggle-item">
-                          <div class="icon-wrapper"><Moon style="width: 1em; height: 1em" /></div>
-                        </button>
-                      </div>
-                    </div>
-                    <div class="menu-item hover-effect">
-                      <span>退出登录</span>
+                    <div class="menu-item hover-effect" @click="handleLoginOrLogout">
+                      <span>{{ isLoggedIn ? '退出登录' : '点击登录' }}</span>
                     </div>
                   </div>
                 </div>
@@ -114,8 +97,8 @@
             </div>
           </div>
 
-          <div class="information-wrapper">
-            <More style="width: 1em; height: 1em; margin-right: 8px" /> <span class="channel"> 更多</span>
+          <div class="information-wrapper hover-effect" @click="toggleInfoPad" :class="{ 'active': showInfoPad }">
+            <Menu style="width: 1em; height: 1em; margin-right: 8px" /> <span class="channel">更多</span>
           </div>
         </div>
       </div>
@@ -124,7 +107,7 @@
       </div>
     </div>
 
-    <Login v-show="c" @click-child="close"></Login>
+    <Login v-if="!token" v-show="c" @click-child="close"></Login>
   </div>
 </template>
 
@@ -139,38 +122,82 @@ import {
   Bell,
   User,
   ArrowRight,
-  More,
   CirclePlus,
+  Menu
 } from "@element-plus/icons-vue";
 import { useRouter } from "vue-router";
 import Login from "@/pages/login.vue";
-import { ref } from "vue";
+import { ref, onMounted, computed } from "vue";
+import { useUserStore } from '@/store/userStore';
+import { storage } from '@/utils/storage';
+
 const router = useRouter();
+const userStore = useUserStore();
+const token = computed(() => userStore.token);
+const showInfoPad = ref(false);
+const activeMenu = ref('dashboard');
+
+onMounted(() => {
+  const path = router.currentRoute.value.path;
+  if (path === '/') activeMenu.value = 'dashboard';
+  else if (path === '/followTrend') activeMenu.value = 'trend';
+  else if (path === '/message') activeMenu.value = 'message';
+  else if (path === '/push') activeMenu.value = 'push';
+  else if (path === '/user') activeMenu.value = 'user';
+});
 
 const c = ref(true);
 
+const isLoggedIn = computed(() => !!token.value);
+
+const toggleInfoPad = () => {
+  showInfoPad.value = !showInfoPad.value;
+};
+
 const toDashboard = () => {
-  router.push({ path: "/" });
+  activeMenu.value = 'dashboard';
+  router.push({ path: "/"});
 };
 
 const toTrend = () => {
+  activeMenu.value = 'trend';
   router.push({ path: "/followTrend" });
 };
 
 const toMessage = () => {
+  activeMenu.value = 'message';
   router.push({ path: "/message" });
 };
 
 const toUser = () => {
+  activeMenu.value = 'user';
   router.push({ path: "/user" });
 };
+
 const toPush = () => {
+  activeMenu.value = 'push';
   router.push({ path: "/push" });
 };
 
 const close = (val: boolean) => {
   console.log(val);
   c.value = val;
+};
+
+const handleLoginOrLogout = () => {
+  if (token.value) {
+    // 退出登录
+    userStore.setToken('');
+    storage.remove('token');
+    userStore.setUserInfo(null);
+    storage.remove('userInfo');
+    // token.value = ''; // 移除这行
+    showInfoPad.value = false;
+    router.push('/');
+  } else {
+    // 显示登录模块
+    c.value = true;
+  }
 };
 </script>
 
@@ -270,6 +297,15 @@ const close = (val: boolean) => {
           }
         }
       }
+
+      .logo {
+        background-color: #409EFF;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 45px;
+        font-weight: bold;
+        cursor: pointer;
+      }
     }
   }
 
@@ -320,12 +356,6 @@ const close = (val: boolean) => {
         -webkit-user-select: none;
         user-select: none;
 
-        .active-channel {
-          background-color: rgba(0, 0, 0, 0.03);
-          border-radius: 999px;
-          color: #333;
-        }
-
         li {
           padding-left: 16px;
           min-height: 48px;
@@ -334,6 +364,17 @@ const close = (val: boolean) => {
           cursor: pointer;
           margin-bottom: 8px;
           color: rgba(51, 51, 51, 0.6);
+          border-radius: 999px;
+          transition: all 0.2s ease;
+
+          &:hover {
+            background-color: rgba(0, 0, 0, 0.03);
+          }
+
+          &.active-channel, &:active {
+            background-color: rgba(0, 0, 0, 0.03);
+            color: #333;
+          }
 
           .link-wrapper {
             display: flex;
@@ -349,6 +390,31 @@ const close = (val: boolean) => {
           margin-left: 12px;
           color: #333;
         }
+
+        .login-wrapper {
+          padding-left: 16px;
+          min-height: 48px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          margin-bottom: 8px;
+          border-radius: 999px;
+          transition: all 0.2s ease;
+
+          &:hover {
+            background-color: rgba(0, 0, 0, 0.03);
+          }
+        }
+
+        .login-btn {
+          background-color: #409EFF;
+          color: white;
+
+          &:hover {
+            background-color: #337EFF;
+          }
+        }
       }
 
       .information-container {
@@ -363,6 +429,16 @@ const close = (val: boolean) => {
           z-index: 16;
           margin-bottom: 4px;
           width: 100%;
+          display: none;
+          opacity: 0;
+          transform: translateY(10px);
+          transition: all 0.3s ease;
+
+          &.show {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+          }
 
           .container {
             width: 100%;
@@ -402,6 +478,16 @@ const close = (val: boolean) => {
                 align-items: center;
                 padding: 0 12px;
                 font-weight: 400;
+                transition: all 0.2s ease;
+                cursor: pointer;
+
+                &:hover {
+                  background-color: rgba(0, 0, 0, 0.03);
+                }
+
+                &:active {
+                  background-color: rgba(0, 0, 0, 0.06);
+                }
 
                 .icon {
                   color: rgba(51, 51, 51, 0.3);
@@ -447,19 +533,37 @@ const close = (val: boolean) => {
             }
           }
         }
+      }
 
-        .information-wrapper {
-          -webkit-user-select: none;
-          user-select: none;
-          cursor: pointer;
-          position: relative;
-          margin-bottom: 20px;
-          height: 48px;
-          width: 100%;
-          display: flex;
+      .information-wrapper {
+        -webkit-user-select: none;
+        user-select: none;
+        cursor: pointer;
+        position: relative;
+        margin-bottom: 20px;
+        height: 48px;
+        padding-left: 16px;
+        width: 100%;
+        display: flex;
+        font-weight: 600;
+        align-items: center;
+        border-radius: 999px;
+        color: rgba(51, 51, 51, 0.8);
+        transition: all 0.2s ease;
+
+        &:hover {
+          background-color: rgba(0, 0, 0, 0.03);
+        }
+
+        &.active {
+          background-color: rgba(0, 0, 0, 0.03);
+          color: #333;
+        }
+
+        .channel {
+          font-size: 16px;
           font-weight: 600;
-          align-items: center;
-          border-radius: 999px;
+          color: inherit;
         }
       }
     }

@@ -1,88 +1,240 @@
 <template>
   <div class="feeds-page">
-    <div class="channel-container">
+    <div class="channel-container" v-if="!unshowChannel">
       <div class="scroll-container channel-scroll-container">
         <div class="content-container">
-          <div class="channel active">推荐</div>
-          <div class="channel">穿搭</div>
-          <div class="channel">美食</div>
-          <div class="channel">彩妆</div>
-          <div class="channel">影视</div>
-          <div class="channel">职场</div>
-          <div class="channel">情感</div>
-          <div class="channel">家居</div>
-          <div class="channel">游戏</div>
-          <div class="channel">旅行</div>
-          <div class="channel">动漫</div>
-          <div class="channel">健身</div>
+          <div
+            v-for="channel in channels"
+            :key="channel.id"
+            :class="['channel', { active: channel.isActive }]"
+            @click="handleChannelClick(channel)"
+          >
+            {{ channel.name }}
+          </div>
         </div>
       </div>
     </div>
-    <div class="loading-container"></div>
-    <div class="feeds-container">
+    <div class="loading-container" v-if="loading">
+      <el-skeleton :rows="5" animated />
+    </div>
+    <div class="feeds-container" v-else>
       <Waterfall :list="list" :width="240" :hasAroundGutter="false" style="max-width: 1260px">
-        <template #item="{ item, url, index }">
+        <template #item="{ item }">
           <div class="card">
-            <LazyImg :url="url" style="border-radius: 8px" @click="toMain" />
+            <LazyImg :url="item.imageUrl" style="border-radius: 8px" @click="toMain(item)" />
             <div class="footer">
-              <a class="title"><span>这是具体内容</span></a>
+              <a class="title"><span>{{ item.title }}</span></a>
+              <div class="description">{{ item.description }}</div>
               <div class="author-wrapper">
                 <a class="author">
-                  <img class="author-avatar" :src="url" />
-                  <span class="name">这是名字</span>
+                  <img class="author-avatar" :src="item.author.avatar" />
+                  <span class="name">{{ item.author.name }}</span>
                 </a>
-                <span class="like-wrapper like-active">
-                  <Search style="width: 1em; height: 1em" />
-                  <span class="count">12</span>
-                </span>
+                <div class="action-wrapper">
+                  <span 
+                    class="like-wrapper" 
+                    :class="{ 'like-active': item.isLiked }"
+                    @click="handleLike(item)"
+                  >
+                    <el-icon><Star /></el-icon>
+                    <span class="count">{{ item.likes }}</span>
+                  </span>
+                  <span class="time">{{ formatTime(item.createTime) }}</span>
+                </div>
               </div>
             </div>
           </div>
         </template>
       </Waterfall>
+      <div v-if="hasMore" class="observer-target" ref="observerTarget">
+        <el-skeleton :rows="1" animated />
+      </div>
     </div>
-    <div class="feeds-loading"></div>
   </div>
 </template>
+
 <script lang="ts" setup>
-import { Search } from "@element-plus/icons-vue";
+import { Star } from "@element-plus/icons-vue";
 import { LazyImg, Waterfall } from "vue-waterfall-plugin-next";
 import "vue-waterfall-plugin-next/dist/style.css";
 import { useRouter } from "vue-router";
+import { ref, onMounted, onUnmounted, watch } from "vue";
+import { getChannels, getFeeds } from "@/api/feeds";
+import type { Channel, FeedItem } from "@/api/feeds";
 
-import { ref } from "vue";
+const props = defineProps<{
+  type: string;
+  userId?: string;
+  unshowChannel?: boolean;
+}>();
 
 const router = useRouter();
+const channels = ref<Channel[]>([]);
+const list = ref<FeedItem[]>([]);
+const loading = ref(true);
+const loadingMore = ref(false);
+const currentPage = ref(1);
+const currentChannelId = ref(1);
+const hasMore = ref(true);
+const PAGE_SIZE = 20;
 
-const list = ref([
-  { src: "https://tse1-mm.cn.bing.net/th/id/OIP-C.Zte3ljd4g6kqrWWyg-8fhAHaEo?w=264&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7" },
-  { src: "https://tse1-mm.cn.bing.net/th/id/OIP-C.cGc4c8dVlqnfV3uwcS1IogHaE8?w=260&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7" },
-  { src: "https://tse1-mm.cn.bing.net/th/id/OIP-C.Zte3ljd4g6kqrWWyg-8fhAHaEo?w=264&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7" },
-  { src: "https://tse4-mm.cn.bing.net/th/id/OIP-C.N0USLldg_iKDGVKT12vB4AHaEK?w=292&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7" },
-  { src: "https://tse1-mm.cn.bing.net/th/id/OIP-C.jzcWzXf_uts2sgE2WChuCQHaEo?w=263&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7" },
-  { src: "https://tse1-mm.cn.bing.net/th/id/OIP-C.Zte3ljd4g6kqrWWyg-8fhAHaEo?w=264&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7" },
-  { src: "https://fuss10.elemecdn.com/a/3f/3302e58f9a181d2509f3dc0fa68b0jpeg.jpeg" },
-  { src: "https://fuss10.elemecdn.com/1/34/19aa98b1fcb2781c4fba33d850549jpeg.jpeg" },
-  { src: "https://fuss10.elemecdn.com/d/e6/c4d93a3805b3ce3f323f7974e6f78jpeg.jpeg" },
-  { src: "https://fuss10.elemecdn.com/0/6f/e35ff375812e6b0020b6b4e8f9583jpeg.jpeg" },
-  { src: "https://fuss10.elemecdn.com/9/bb/e27858e973f5d7d3904835f46abbdjpeg.jpeg" },
-  { src: "https://fuss10.elemecdn.com/3/28/bbf893f792f03a54408b3b7a7ebf0jpeg.jpeg" },
-  { src: "https://fuss10.elemecdn.com/2/11/6535bcfb26e4c79b48ddde44f4b6fjpeg.jpeg" },
-  { src: "https://tse4-mm.cn.bing.net/th/id/OIP-C.N0USLldg_iKDGVKT12vB4AHaEK?w=292&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7" },
-  { src: "https://tse1-mm.cn.bing.net/th/id/OIP-C.jzcWzXf_uts2sgE2WChuCQHaEo?w=263&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7" },
-  { src: "https://tse3-mm.cn.bing.net/th/id/OIP-C.YzEeJqgWky6RQMatrMd6-gHaHa?w=170&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7" },
-  { src: "https://tse3-mm.cn.bing.net/th/id/OIP-C.YzEeJqgWky6RQMatrMd6-gHaHa?w=170&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7" },
-  { src: "https://tse1-mm.cn.bing.net/th/id/OIP-C.Zte3ljd4g6kqrWWyg-8fhAHaEo?w=264&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7" },
-  { src: "https://tse4-mm.cn.bing.net/th/id/OIP-C.N0USLldg_iKDGVKT12vB4AHaEK?w=292&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7" },
-  { src: "https://tse1-mm.cn.bing.net/th/id/OIP-C.jzcWzXf_uts2sgE2WChuCQHaEo?w=263&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7" },
-  { src: "https://tse1-mm.cn.bing.net/th/id/OIP-C.Zte3ljd4g6kqrWWyg-8fhAHaEo?w=264&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7" },
-  { src: "https://tse1-mm.cn.bing.net/th/id/OIP-C.cGc4c8dVlqnfV3uwcS1IogHaE8?w=260&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7" },
-]);
+const observerTarget = ref<HTMLElement | null>(null);
+let observer: IntersectionObserver | null = null;
 
-const toMain = () => {
-  router.push({ path: "/main" });
+const fetchChannels = async () => {
+  try {
+    const res = await getChannels();
+    channels.value = res.data;
+  } catch (error) {
+    console.error('Failed to fetch channels:', error);
+  }
 };
+
+const fetchFeeds = async (isLoadMore = false) => {
+  if (!isLoadMore) {
+    loading.value = true;
+  } else {
+    loadingMore.value = true;
+  }
+  
+  try {
+    const res = await getFeeds({
+      channelId: currentChannelId.value,
+      page: currentPage.value,
+      pageSize: PAGE_SIZE,
+      type: props.type,
+      userId: props.userId
+    });
+    
+    if (isLoadMore) {
+      list.value = [...list.value, ...res.data.list];
+    } else {
+      list.value = res.data.list;
+    }
+    
+    hasMore.value = res.data.total > list.value.length;
+  } catch (error) {
+    console.error('Failed to fetch feeds:', error);
+  } finally {
+    loading.value = false;
+    loadingMore.value = false;
+  }
+};
+
+const handleChannelClick = (channel: Channel) => {
+  channels.value = channels.value.map(c => ({
+    ...c,
+    isActive: c.id === channel.id
+  }));
+  currentChannelId.value = channel.id;
+  currentPage.value = 1;
+  fetchFeeds();
+};
+
+const handleLike = async (item: FeedItem) => {
+  try {
+    // TODO: 调用点赞/取消点赞接口
+    item.isLiked = !item.isLiked;
+    item.likes += item.isLiked ? 1 : -1;
+  } catch (error) {
+    console.error('Failed to toggle like:', error);
+  }
+};
+
+const toMain = (item: FeedItem) => {
+  router.push({ 
+    path: "/main",
+    query: { id: item.id.toString() }
+  });
+};
+
+const formatTime = (time: string) => {
+  const date = new Date(time);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  
+  // 转换为秒
+  const diffSeconds = Math.floor(diff / 1000);
+  
+  if (diffSeconds < 60) {
+    return '刚刚';
+  }
+  
+  // 转换为分钟
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  if (diffMinutes < 60) {
+    return `${diffMinutes}分钟前`;
+  }
+  
+  // 转换为小时
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) {
+    return `${diffHours}小时前`;
+  }
+  
+  // 转换为天
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 30) {
+    return `${diffDays}天前`;
+  }
+  
+  // 转换为月
+  const diffMonths = Math.floor(diffDays / 30);
+  if (diffMonths < 12) {
+    return `${diffMonths}个月前`;
+  }
+  
+  // 转换为年
+  const diffYears = Math.floor(diffMonths / 12);
+  return `${diffYears}年前`;
+};
+
+const setupIntersectionObserver = () => {
+  if (observer) {
+    observer.disconnect();
+  }
+
+  observer = new IntersectionObserver(
+    (entries) => {
+      const target = entries[0];
+      if (target.isIntersecting && hasMore.value && !loadingMore.value) {
+        currentPage.value += 1;
+        fetchFeeds(true);
+      }
+    },
+    {
+      threshold: 0.1,
+    }
+  );
+
+  if (observerTarget.value) {
+    observer.observe(observerTarget.value);
+  }
+};
+
+watch(() => props.type, () => {
+  currentPage.value = 1;
+  if (!props.unshowChannel) {
+    fetchChannels();
+  }
+  fetchFeeds();
+}, { immediate: true });
+
+onMounted(() => {
+  if (!props.unshowChannel) {
+    fetchChannels();
+  }
+  setupIntersectionObserver();
+});
+
+onUnmounted(() => {
+  if (observer) {
+    observer.disconnect();
+    observer = null;
+  }
+});
 </script>
+
 <style lang="less" scoped>
 .feeds-page {
   flex: 1;
@@ -152,6 +304,7 @@ const toMain = () => {
 
     .footer {
       padding: 12px;
+      
       .title {
         margin-bottom: 8px;
         word-break: break-all;
@@ -163,6 +316,17 @@ const toMain = () => {
         font-size: 14px;
         line-height: 140%;
         color: #333;
+      }
+
+      .description {
+        margin-bottom: 8px;
+        font-size: 12px;
+        line-height: 1.5;
+        color: #666;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
       }
 
       .author-wrapper {
@@ -199,17 +363,55 @@ const toMain = () => {
           }
         }
 
-        .like-wrapper {
-          position: relative;
-          cursor: pointer;
+        .action-wrapper {
           display: flex;
           align-items: center;
+          gap: 12px;
 
-          .count {
-            margin-left: 2px;
+          .like-wrapper {
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+
+            .count {
+              margin-left: 2px;
+            }
+          }
+
+          .time {
+            color: #999;
+            font-size: 12px;
           }
         }
       }
+    }
+  }
+}
+
+.loading-container {
+  padding: 20px;
+}
+
+.observer-target {
+  padding: 20px;
+  margin: 0 auto;
+  max-width: 1260px;
+}
+
+.like-wrapper {
+  .el-icon {
+    width: 1em;
+    height: 1em;
+    color: #999;
+  }
+  
+  &.like-active {
+    .el-icon {
+      color: red;
+    }
+    .count {
+      color: red;
     }
   }
 }

@@ -5,7 +5,7 @@
         <div class="avatar">
           <div class="avatar-wrapper">
             <img
-              src="https://sns-avatar-qc.xhscdn.com/avatar/5fb295387373d50001ddf25f.jpg?imageView2/2/w/540/format/webp|imageMogr2/strip2"
+              :src="userInfo?.avatar"
               class="user-image"
               style="border: 1px solid rgba(0, 0, 0, 0.08)"
             />
@@ -16,31 +16,38 @@
             <div class="basic-info">
               <div class="user-basic">
                 <div class="user-nickname">
-                  <div class="user-name">三块给你买麻吉<!----></div>
+                  <div class="user-name">{{ userInfo?.nickname }}</div>
                 </div>
                 <div class="user-content">
-                  <span class="user-redId">小红书号：275592512</span><span class="user-IP"> IP属地：广东</span>
+                  <span class="user-redId">用户号：{{ userInfo?.userId }}</span>
+                  <span class="user-IP"> IP属地：{{ userInfo?.ipLocation }}</span>
                 </div>
               </div>
             </div>
             <div class="user-desc">
-              永远爱蜡笔小新，哆啦A梦（只是哆啦A梦），柯南，银魂（后悔没有早点入坑），火影，小埋！。
+              {{ userInfo?.description }}
             </div>
             <div class="user-tags">
-              <div class="tag-item">
-                <div>射手座</div>
+              <div class="tag-item" v-for="(tag, index) in userInfo?.tags" :key="index">
+                <div>{{ tag }}</div>
               </div>
-              <div class="tag-item"><div>广东广州</div></div>
-              <div class="tag-item"><div>程序员</div></div>
             </div>
             <div class="data-info">
               <div class="user-interactions">
-                <div><span class="count">8</span><span class="shows">关注</span></div>
-                <div><span class="count">575</span><span class="shows">粉丝</span></div>
-                <div><span class="count">2445</span><span class="shows">获赞与收藏</span></div>
+                <div>
+                  <span class="count">{{ userInfo?.stats.following }}</span>
+                  <span class="shows">关注</span>
+                </div>
+                <div>
+                  <span class="count">{{ userInfo?.stats.followers }}</span>
+                  <span class="shows">粉丝</span>
+                </div>
+                <div>
+                  <span class="count">{{ userInfo?.stats.likes }}</span>
+                  <span class="shows">获赞与收藏</span>
+                </div>
               </div>
             </div>
-            <!---->
           </div>
           <div class="follow"><!----></div>
         </div>
@@ -49,32 +56,44 @@
     <div class="reds-sticky-box user-page-sticky" style="--1ee3a37c: all 0.4s cubic-bezier(0.2, 0, 0.25, 1) 0s">
       <div class="reds-sticky" style="">
         <div class="tertiary center reds-tabs-list" style="padding: 0px 12px">
-          <div class="reds-tab-item active" style="padding: 0px 16px; margin-right: 0px; font-size: 16px">
-            <!----><!----><span>笔记</span>
+          <div 
+            v-for="tab in tabs" 
+            :key="tab.type"
+            :class="['reds-tab-item', { active: currentTab === tab.type }]" 
+            style="padding: 0px 16px; margin-right: 0px; font-size: 16px"
+            @click="handleTabChange(tab)"
+          >
+            <span>{{ tab.name }}</span>
           </div>
-          <div class="reds-tab-item" style="padding: 0px 16px; margin-right: 0px; font-size: 16px">
-            <!----><!----><span>收藏</span>
-          </div>
-          <div class="reds-tab-item" style="padding: 0px 16px; margin-right: 0px; font-size: 16px">
-            <!----><!----><span @click="toAgree">点赞</span>
-          </div>
-          <!---->
-          <div class="active-tag" style="width: 64px; left: 627px"></div>
         </div>
       </div>
     </div>
     <div class="feeds-tab-container" style="--1ee3a37c: all 0.4s cubic-bezier(0.2, 0, 0.25, 1) 0s">
-      <router-view />
+      <Dashboard class="dashboard" :type="currentTab" :userId="userInfo?.userId" :unshowChannel="unshowChannel" />
     </div>
   </div>
 </template>
 <script lang="ts" setup>
-// import { Star } from "@element-plus/icons-vue";
-import { useRouter } from "vue-router";
-const router = useRouter();
+import { ref } from 'vue';
+import { useUserStore } from "@/store/userStore";
+import { storeToRefs } from "pinia";
+import Dashboard from '@/pages/dashboard/dashboard.vue';
 
-const toAgree = () => {
-  router.push({ path: "/agree" });
+const userStore = useUserStore();
+const { userInfo } = storeToRefs(userStore);
+
+const tabs = [
+  { name: '笔记', type: 'note', unshowChannel: true },
+  { name: '收藏', type: 'favorite', unshowChannel: true },
+  { name: '点赞', type: 'like', unshowChannel: true }
+];
+
+const currentTab = ref('note');
+const unshowChannel = ref(true);
+
+const handleTabChange = (tab: any) => {
+  currentTab.value = tab.type;
+  unshowChannel.value = tab.unshowChannel;
 };
 </script>
 <style lang="less" scoped>
@@ -266,6 +285,9 @@ const toAgree = () => {
 
   .feeds-tab-container {
     padding-left: 2rem;
+    .dashboard {
+      padding-top: 0;
+    }
   }
 }
 </style>

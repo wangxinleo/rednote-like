@@ -5,7 +5,7 @@
     <div class="login-container">
       <div class="icon-btn-wrapper close-button" @click="close"><Close style="width: 1em; height: 1em" /></div>
       <div class="left">
-        <img class="logo" src="@/assets/logo.png" />
+        <div class="logo-text">医路相伴</div>
         <div class="course-video" style="display: none">
           <video
             src="https://fe-video-qc.xhscdn.com/fe-platform/f3ddbc4d8062e08c8684e1fa3bea7c2e2bb77c21.mp4"
@@ -21,7 +21,7 @@
           />
           <div class="status" style="display: none"><!----><!----></div>
         </div>
-        <div class="tip">使用 小蓝书 / 微信 / QQ 扫码登录</div>
+        <div class="tip">使用 微信 扫码登录</div>
         <div class="course">
           <svg class="reds-icon play" width="11" height="11">
             <use xlink:href="#play"></use>
@@ -30,35 +30,25 @@
         </div>
       </div>
       <div class="right">
-        <div class="title">手机号登录</div>
+        <div class="title">账户密码登录</div>
         <!---->
         <div class="input-container">
-          <form onsubmit="return false">
-            <label class="phone"
-              ><span class="country-code">+86</span
-              ><input placeholder="输入手机号" type="text" name="blur" autofocus="true" /><svg
-                class="reds-icon clear"
-                width="24"
-                height="24"
-                fill="#xhs-pc-web-phone"
-                style="display: none"
-              >
-                <use xlink:href="#clear"></use></svg
-            ></label>
+          <form @submit.prevent="handleLogin">
+            <label class="username">
+              <input v-model="formData.username" placeholder="请输入账号" type="text" name="username" autofocus="true" />
+            </label>
             <div style="height: 16px"></div>
-            <label class="auth-code"
-              ><input type="number" placeholder="输入验证码" autocomplete="false" /><span class="code-button"
-                >获取验证码</span
-              ></label
-            >
-            <div class="err-msg"></div>
-            <button class="submit">登录</button>
+            <label class="password">
+              <input v-model="formData.password" type="password" placeholder="请输入密码" autocomplete="false" />
+            </label>
+            <div class="err-msg">{{errorMsg}}</div>
+            <button :disabled="!isAgreed || !formData.username || !formData.password" class="submit" :class="{'submit-active': isAgreed && formData.username && formData.password}">登录</button>
           </form>
         </div>
         <div class="agreements">
-          <span class="agree-icon"></span>
-          <label> 我已阅读并同意</label
-          ><a class="links" target="_blank" href="#"
+          <span class="agree-icon" :class="{'agree-icon-active': isAgreed}" @click="toggleAgree"></span>
+          <label> 我已阅读并同意</label>
+          <a class="links" target="_blank" href="#"
             >《用户协议》</a
           ><a class="links" target="_blank" href="#"
             >《隐私政策》</a
@@ -116,12 +106,63 @@
 </template>
 
 <script lang="ts" setup>
-  import { Close } from "@element-plus/icons-vue";
-  const emit = defineEmits(["clickChild"]);
-  const close = () => {
-    //传递给父组件
-    emit("clickChild", false);
-  };
+import { Close } from "@element-plus/icons-vue";
+import { ref, reactive } from 'vue';
+import { ElMessage } from 'element-plus';
+import { useUserStore } from '@/store/userStore';
+
+const userStore = useUserStore();
+const emit = defineEmits(["clickChild"]);
+const close = () => {
+  emit("clickChild", false);
+};
+
+const formData = reactive({
+  username: '',
+  password: ''
+});
+
+const isAgreed = ref(false);
+const errorMsg = ref('');
+
+const toggleAgree = () => {
+  isAgreed.value = !isAgreed.value;
+};
+
+const handleLogin = async () => {
+  if(!isAgreed.value) {
+    errorMsg.value = '请先同意用户协议';
+    return;
+  }
+  
+  if(formData.username && formData.password) {
+    try {
+      // 调用登录接口
+      await userStore.login({
+        username: formData.username,
+        password: formData.password
+      });
+      
+      // 登录成功
+      errorMsg.value = '';
+      userStore.setToken(res.data.token);
+      ElMessage({
+        message: '登录成功',
+        type: 'success',
+        duration: 2000,
+        center: true,
+      });
+      
+      setTimeout(() => {
+        close();
+      }, 1000);
+    } catch (error) {
+      errorMsg.value = '登录失败，请重试';
+    }
+  } else {
+    errorMsg.value = '账号或密码错误';
+  }
+};
 </script>
 
 <style lang="less" scoped>
@@ -191,13 +232,15 @@ a {
       img {
         border-style: none;
       }
-      .logo {
+      .logo-text {
         margin-top: 64px;
-        width: 91.08px;
-        height: 48px;
-        -webkit-user-select: none;
-        user-select: none;
-        pointer-events: none;
+        font-size: 32px;
+        font-weight: bold;
+        color: #333;
+        background: linear-gradient(45deg, #409EFF, #79bbff);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
       }
 
       .course-video {
@@ -292,12 +335,8 @@ a {
         display: flex;
         flex-direction: column;
 
-        .auth-code {
-          justify-content: center;
-        }
-
-        .auth-code,
-        .phone {
+        .username,
+        .password {
           display: flex;
           align-items: center;
           font-size: 16px;
@@ -308,51 +347,22 @@ a {
           border-radius: 999px;
           transition: border-color 0.2s;
           border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
-
-          .country-code {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            width: 29px;
+          
+          input {
+            width: 100%;
             height: 100%;
-            font-weight: 400;
-            margin-left: 16px;
-            margin-right: 20px;
+            padding: 0 20px;
+            font-size: 16px;
+            caret-color: #409EFF;
             color: #333;
           }
-
-          .country-code:after {
-            position: absolute;
-            left: 41px;
-            content: "";
-            height: 24px;
-            width: 1px;
-            background-color: #fff;
-          }
-        }
-
-        .auth-code input,
-        .phone input {
-          font-size: 16px;
-          width: 130px;
-          height: 100%;
-          caret-color: #ff2442;
-          color: #333;
-        }
-
-        .code-button {
-          font-size: 16px;
-          color: #ff2442;
-          cursor: pointer;
-          opacity: 0.5;
         }
 
         .err-msg {
           margin-top: 9.5px;
           height: 10px;
           line-height: 10px;
-          color: var(--color-red);
+          color: #409EFF;
           font-size: 14px;
           font-weight: 400;
           display: flex;
@@ -362,15 +372,20 @@ a {
         .submit {
           margin-top: 24px;
           height: 48px;
-          background: #ff2442;
+          background: #409EFF;
           color: #fff;
           opacity: 0.5;
           border-radius: 999px;
           font-size: 16px;
           font-weight: 600;
-          cursor: pointer;
+          cursor: not-allowed;
           transition: all 0.2s;
           width: 100%;
+          
+          &-active {
+            opacity: 1;
+            cursor: pointer;
+          }
         }
 
         form {
@@ -389,12 +404,32 @@ a {
         line-height: 120%;
 
         .agree-icon {
+          position: absolute;
+          left: 0;
           display: inline-block;
-          width: 10px;
-          height: 10px;
+          width: 16px;
+          height: 16px;
           border-radius: 100%;
           background-color: #fff;
           border: 1px solid rgba(0, 0, 0, 0.183);
+          cursor: pointer;
+          
+          &-active {
+            background-color: #409EFF;
+            border-color: #409EFF;
+            
+            &:after {
+              content: '';
+              position: absolute;
+              left: 5px;
+              top: 2px;
+              width: 5px;
+              height: 9px;
+              border: solid white;
+              border-width: 0 2px 2px 0;
+              transform: rotate(45deg);
+            }
+          }
         }
 
         a {
